@@ -41,6 +41,79 @@ spec:
   """
 }
 
+Map getDbInfo(String databaseLabel) {
+  Map SUPPORTED_DBS = ['postgresql-96': [
+                           version: '9.6.18',
+                           profiles: 'postgresql',
+                           extra: ''],
+                       'sqlserver-2017': [
+                           version: '2017-latest',
+                           profiles: 'sqlserver',
+                           extra: '-Ddatabase.name="master" -Ddatabase.username=sa -Ddatabase.password=cambpm-123#']
+  ]
+
+  return SUPPORTED_DBS[databaseLabel]
+}
+
+String getDbAgent(String dbLabel) {
+  Map dbInfo = getDbInfo(dbLabel)
+  String dbType = getDbType(dbLabel)
+
+  if (dbType == "postgresql") {
+    return getPostgresAgent(dbInfo.version, 16)
+  }
+  if (dbType == 'sqlserver') {
+    return getSqlServerAgent(dbInfo.version, 16)
+  }
+}
+
+String getPostgresAgent(String dockerTag = '9.6.18', Integer cpuLimit = 4){
+  // assuming 2Gig for each core
+  String memoryLimit = cpuLimit * 2;
+  """
+  - name: postgres
+    image: postgres:${dockerTag}
+    env:
+    - name: TZ
+      value: Europe/Berlin
+    - name: POSTGRES_DB
+      value: process-engine
+    - name: POSTGRES_USER
+      value: camunda
+    - name: POSTGRES_PASSWORD
+      value: camunda
+    resources:
+      limits:
+        cpu: ${cpuLimit}
+        memory: ${memoryLimit}Gi
+      requests:
+        cpu: ${cpuLimit}
+        memory: ${memoryLimit}Gi
+  """
+}
+
+String getSqlServerAgent(String dockerTag = '2017-latest', Integer cpuLimit = 4){
+  String memoryLimit = cpuLimit * 2;
+  """
+  - name: mcr.microsoft.com/mssql/server
+    image: mcr.microsoft.com/mssql/server:${dockerTag}
+    env:
+    - name: TZ
+      value: Europe/Berlin
+    - name: ACCEPT_EULA
+      value: Y
+    - name: SA_PASSWORD
+      value: cambpm-123#
+    resources:
+      limits:
+        cpu: ${cpuLimit}
+        memory: ${memoryLimit}Gi
+      requests:
+        cpu: ${cpuLimit}
+        memory: ${memoryLimit}Gi
+  """
+}
+
 pipeline {
   agent none
   options {
@@ -138,7 +211,7 @@ pipeline {
           }
           agent {
             kubernetes {
-              yaml getAgent()
+              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
             }
           }
           steps{
@@ -161,7 +234,7 @@ pipeline {
           }
           agent {
             kubernetes {
-              yaml getAgent()
+              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
             }
           }
           steps{
@@ -184,7 +257,7 @@ pipeline {
           }
           agent {
             kubernetes {
-              yaml getAgent()
+              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
             }
           }
           steps{
@@ -207,7 +280,7 @@ pipeline {
           }
           agent {
             kubernetes {
-              yaml getAgent()
+              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
             }
           }
           steps{
@@ -340,6 +413,113 @@ pipeline {
         }
       }
     }
+    stage("engine-UNIT DB tests") {
+      matrix {
+        axes {
+          axis {
+            name 'DB'
+            values 'postgresql-96'
+          }
+        }
+        when {
+          anyOf {
+            branch 'pipeline-master';
+            allOf {
+              changeRequest();
+              expression {
+                withLabels("all-db") || withDbLabel(env.DB)
+              }
+            }
+          }
+        }
+        agent {
+          kubernetes {
+            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
+          }
+        }
+        stages {
+          stage("engine-UNIT") {
+            steps {
+              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+                runMaven(true, false,'engine/', 'clean test -P' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
+              }
+            }
+          }
+        }
+      }
+    }
+    stage("engine-UNIT-authorizations DB tests") {
+      matrix {
+        axes {
+          axis {
+            name 'DB'
+            values 'postgresql-96'
+          }
+        }
+        agent {
+          kubernetes {
+            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
+          }
+        }
+        stages {
+          stage("engine-UNIT-authorizations") {
+            steps {
+              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+                runMaven(true, false,'engine/', 'clean test -PcfgAuthorizationCheckRevokesAlways' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
+              }
+            }
+          }
+        }
+      }
+    }
+    stage("webapp-UNIT DB tests") {
+      matrix {
+        axes {
+          axis {
+            name 'DB'
+            values 'postgresql-96'
+          }
+        }
+        agent {
+          kubernetes {
+            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
+          }
+        }
+        stages {
+          stage("webapp-UNIT") {
+            steps {
+              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+                runMaven(true, false,'webapps/', 'clean test -Dskip.frontend.build=true -P' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
+              }
+            }
+          }
+        }
+      }
+    }
+    stage("webapp-UNIT-authorizations DB tests") {
+      matrix {
+        axes {
+          axis {
+            name 'DB'
+            values 'postgresql-96'
+          }
+        }
+        agent {
+          kubernetes {
+            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
+          }
+        }
+        stages {
+          stage("webapp-UNIT-authorizations") {
+            steps {
+              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+                runMaven(true, false,'webapps/', 'clean test -Dskip.frontend.build=true -PcfgAuthorizationCheckRevokesAlways' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
+              }
+            }
+          }
+        }
+      }
+    }
     stage('db tests + CE webapps IT + EE platform') {
       parallel {
         stage('engine-api-compatibility') {
@@ -369,7 +549,7 @@ pipeline {
         stage('engine-UNIT-database-table-prefix') {
           agent {
             kubernetes {
-              yaml getAgent()
+              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
             }
           }
           steps{
@@ -381,7 +561,7 @@ pipeline {
         stage('webapp-UNIT-database-table-prefix') {
           agent {
             kubernetes {
-              yaml getAgent()
+              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
             }
           }
           steps{
@@ -395,7 +575,7 @@ pipeline {
         stage('engine-UNIT-wls-compatibility') {
           agent {
             kubernetes {
-              yaml getAgent()
+              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
             }
           }
           steps{
@@ -407,7 +587,7 @@ pipeline {
         stage('IT-wildfly-domain') {
           agent {
             kubernetes {
-              yaml getAgent()
+              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
             }
           }
           steps{
@@ -419,7 +599,7 @@ pipeline {
         stage('IT-wildfly-servlet') {
           agent {
             kubernetes {
-              yaml getAgent()
+              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
             }
           }
           steps{
@@ -431,7 +611,7 @@ pipeline {
 //        stage('EE-platform-DISTRO-dummy') {
 //          agent {
 //            kubernetes {
-//              yaml getAgent()
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
 //            }
 //          }
 //          steps{
@@ -474,4 +654,21 @@ void withLabels(String... labels) {
   for ( l in labels) {
     pullRequest.labels.contains(labelName)
   }
+}
+
+void withDbLabels(String dbLabel) {
+  withLabels(getDbType(dbLabel))
+}
+
+String getDbType(String dbLabel) {
+  String[] database = dbLabel.split("-")
+  return database[0]
+}
+
+String getDbProfiles(String dbLabel) {
+  return getDbInfo(dbLabel).profiles
+}
+
+String getDbExtras(String dbLabel) {
+  return getDbInfo(dbLabel).extra
 }
