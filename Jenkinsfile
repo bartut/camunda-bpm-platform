@@ -366,6 +366,18 @@ pipeline {
             }
           }
         }
+        stage('engine-UNIT-database-table-prefix') {
+          agent {
+            kubernetes {
+              yaml getAgent()
+            }
+          }
+          steps{
+            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+              runMaven(true, false,'engine/', 'clean test -Pdb-table-prefix')
+            }
+          }
+        }
         stage('webapp-UNIT-database-table-prefix') {
           agent {
             kubernetes {
@@ -377,6 +389,42 @@ pipeline {
               nodejs('nodejs-14.6.0'){
                 runMaven(true, false,'webapps/', 'clean test -Pdb-table-prefix')
               }
+            }
+          }
+        }
+        stage('engine-UNIT-wls-compatibility') {
+          agent {
+            kubernetes {
+              yaml getAgent()
+            }
+          }
+          steps{
+            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+              runMaven(true, false,'.', 'clean verify -Pcheck-engine,wls-compatibility,jersey')
+            }
+          }
+        }
+        stage('IT-wildfly-domain') {
+          agent {
+            kubernetes {
+              yaml getAgent()
+            }
+          }
+          steps{
+            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+              runMaven(true, true,'qa/', 'clean install -Pwildfly-domain,h2,engine-integration')
+            }
+          }
+        }
+        stage('IT-wildfly-servlet') {
+          agent {
+            kubernetes {
+              yaml getAgent()
+            }
+          }
+          steps{
+            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+              runMaven(true, true,'qa/', 'clean install -Pwildfly,wildfly-servlet,h2,engine-integration')
             }
           }
         }
