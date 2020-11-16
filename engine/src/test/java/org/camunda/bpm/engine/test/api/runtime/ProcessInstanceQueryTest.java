@@ -1207,14 +1207,14 @@ public class ProcessInstanceQueryTest {
       runtimeService.createProcessInstanceQuery().variableValueLessThanOrEqual("nullVar", null);
       fail("Excetion expected");
     } catch(ProcessEngineException ae) {
-      assertThat(ae.getMessage()).contains("Booleans and null cannot be used in 'less than or equal' condition"));
+      assertThat(ae.getMessage()).contains("Booleans and null cannot be used in 'less than or equal' condition");
     }
 
     try {
       runtimeService.createProcessInstanceQuery().variableValueLike("nullVar", null);
       fail("Excetion expected");
     } catch(ProcessEngineException ae) {
-      assertThat(ae.getMessage()).contains("Booleans and null cannot be used in 'like' condition"));
+      assertThat(ae.getMessage()).contains("Booleans and null cannot be used in 'like' condition");
     }
 
     runtimeService.deleteProcessInstance(processInstance1.getId(), "test");
@@ -1296,7 +1296,7 @@ public class ProcessInstanceQueryTest {
       runtimeService.createProcessInstanceQuery().variableValueLike(null, "value");
       fail("Expected exception");
     } catch(ProcessEngineException ae) {
-      assertThat(ae.getMessage()).contains("name is null"));
+      assertThat(ae.getMessage()).contains("name is null");
     }
   }
 
@@ -1391,7 +1391,7 @@ public class ProcessInstanceQueryTest {
       runtimeService.createProcessInstanceQuery().processInstanceIds(null);
       fail("ProcessEngineException expected");
     } catch (ProcessEngineException re) {
-      assertThat(re.getMessage()).contains("Set of process instance ids is null"));
+      assertThat(re.getMessage()).contains("Set of process instance ids is null");
     }
   }
 
@@ -2002,7 +2002,7 @@ public class ProcessInstanceQueryTest {
       fail("exception expected");
     }
     catch (NullValueException e) {
-        assertThat(e.getMessage(), containsString("activity ids contains null value"));
+        assertThat(e.getMessage()).contains("activity ids contains null value");
     }
   }
 

@@ -16,6 +16,7 @@
  */
 package org.camunda.bpm.engine.test.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;

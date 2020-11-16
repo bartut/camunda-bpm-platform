@@ -87,7 +87,7 @@ public class ProcessDiagramParseTest {
     } catch (Exception e) {
       // then
       assertThat(e.getMessage()).contains("Error while parsing BPMN model");
-      assertThat(e.getCause()).contains("http://apache.org/xml/features/disallow-doctype-decl");
+      assertThat(e.getCause().getMessage()).contains("http://apache.org/xml/features/disallow-doctype-decl");
     }
   }
 

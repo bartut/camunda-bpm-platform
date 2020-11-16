@@ -27,7 +27,6 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.api.runtime.migration.models.ProcessModels;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
 import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
-import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,7 +62,7 @@ public class MultiTenancyMigrationTest {
     } catch (ProcessEngineException e) {
       // then
       assertThat(e.getMessage()).contains(
-          "Cannot migrate process instances between processes of different tenants ('tenant1' != 'tenant2')"));
+          "Cannot migrate process instances between processes of different tenants ('tenant1' != 'tenant2')");
     }
   }
 

@@ -935,7 +935,7 @@ public class CaseExecutionCompletionTest {
     } catch (CaseIllegalStateTransitionException e) {
       // then
 
-      assertThat("the case instance is still completed",caseInstance.isCompleted()).isTrue();
+      assertThat(caseInstance.isCompleted()).describedAs("the case instance is still completed").isTrue();
     }
 
   }
