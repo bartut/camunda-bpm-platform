@@ -64,7 +64,7 @@ public class CompareUtilTest {
     assertThat(CompareUtil.elementIsNotContainedInArray(element, nullValues)).isFalse();
 
     assertThat(CompareUtil.elementIsNotContainedInList(element, Arrays.asList(values))).isFalse();
-    assertThat(CompareUtil.elementIsNotContainedInList(element, Arrays.asList(values2))).isFalse();
+    assertThat(CompareUtil.elementIsNotContainedInList(element, Arrays.asList(values2))).isTrue();
     assertThat(CompareUtil.elementIsNotContainedInList(null, Arrays.asList(values))).isFalse();
     assertThat(CompareUtil.elementIsNotContainedInList(null, nullList)).isFalse();
     assertThat(CompareUtil.elementIsNotContainedInList(element, nullList)).isFalse();

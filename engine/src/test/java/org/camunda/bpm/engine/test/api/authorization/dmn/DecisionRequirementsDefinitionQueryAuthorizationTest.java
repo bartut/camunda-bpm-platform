@@ -112,12 +112,13 @@ public class DecisionRequirementsDefinitionQueryAuthorizationTest {
 
     DecisionRequirementsDefinitionQuery query = engineRule.getRepositoryService().createDecisionRequirementsDefinitionQuery();
     long count = query.count();
+    List<DecisionRequirementsDefinition> definitions = query.list();
 
     // then
     if (authRule.assertScenario(scenario)) {
       assertThat(count).isEqualTo((long) expectedDefinitionKeys.length);
 
-      List<String> definitionKeys = getDefinitionKeys(query.list());
+      List<String> definitionKeys = getDefinitionKeys(definitions);
       assertThat(definitionKeys).containsExactlyInAnyOrder(expectedDefinitionKeys);
     }
   }
