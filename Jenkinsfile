@@ -68,8 +68,6 @@ String getDbAgent(String dbLabel) {
 }
 
 String getPostgresAgent(String dbLabel, String dockerTag = '9.6v0.2.2'){
-  // assuming 2Gig for each core
-  String memoryLimit = cpuLimit * 2;
   """
 metadata:
   annotations: {}
