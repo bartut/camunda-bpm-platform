@@ -70,7 +70,6 @@ String getDbAgent(String dbLabel) {
 String getPostgresAgent(String dbLabel, String dockerTag = '9.6v0.2.2'){
   """
 metadata:
-  annotations: {}
   labels:
     name: "jenkins-slave-postgresql"
     feature: "postgresql_${dockerTag}"
@@ -90,6 +89,18 @@ spec:
         memory: "4Gi"
     volumeMounts:
     - mountPath: "/home/work"
+      name: "workspace-volume"
+           workingDir: "/home/work"
+    nodeSelector:
+      cloud.google.com/gke-nodepool: "agents-n1-standard-4-netssd-preempt"
+    restartPolicy: "Never"
+    tolerations:
+    - effect: "NoSchedule"
+      key: "agents-n1-standard-4-netssd-preempt"
+      operator: "Exists"
+    volumes:
+    - emptyDir:
+        medium: ""
       name: "workspace-volume"
   """
 }
