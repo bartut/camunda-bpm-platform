@@ -42,8 +42,8 @@ spec:
 }
 
 Map getDbInfo(String databaseLabel) {
-  Map SUPPORTED_DBS = ['postgresql-96': [
-                           version: '9.6.18',
+  Map SUPPORTED_DBS = ['postgresql_96': [
+                           version: '9.6v0.2.2',
                            profiles: 'postgresql',
                            extra: ''],
                        'sqlserver-2017': [
@@ -60,57 +60,39 @@ String getDbAgent(String dbLabel) {
   String dbType = getDbType(dbLabel)
 
   if (dbType == "postgresql") {
-    return getPostgresAgent(dbInfo.version, 16)
+    return getPostgresAgent(dbLabel, dbInfo.version)
   }
   if (dbType == 'sqlserver') {
-    return getSqlServerAgent(dbInfo.version, 16)
+    return getSqlServerAgent(dbLabel, dbInfo.version)
   }
 }
 
-String getPostgresAgent(String dockerTag = '9.6.18', Integer cpuLimit = 4){
+String getPostgresAgent(String dbLabel, String dockerTag = '9.6v0.2.2'){
   // assuming 2Gig for each core
   String memoryLimit = cpuLimit * 2;
   """
-  - name: postgres
-    image: postgres:${dockerTag}
-    env:
-    - name: TZ
-      value: Europe/Berlin
-    - name: POSTGRES_DB
-      value: process-engine
-    - name: POSTGRES_USER
-      value: camunda
-    - name: POSTGRES_PASSWORD
-      value: camunda
+metadata:
+  annotations: {}
+  labels:
+    name: "jenkins-slave-postgresql"
+    feature: "postgresql_${dockerTag}"
+    jenkins: "slave"
+    jenkins/label: "${dbLabel}"
+spec:
+  containers:
+  - name: "jnlp"
+    image: "gcr.io/ci-30-162810/postgresql:${dockerTag}"
+    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
+    tty: true
     resources:
       limits:
-        cpu: ${cpuLimit}
-        memory: ${memoryLimit}Gi
+        memory: "4Gi"
       requests:
-        cpu: ${cpuLimit}
-        memory: ${memoryLimit}Gi
-  """
-}
-
-String getSqlServerAgent(String dockerTag = '2017-latest', Integer cpuLimit = 4){
-  String memoryLimit = cpuLimit * 2;
-  """
-  - name: mcr.microsoft.com/mssql/server
-    image: mcr.microsoft.com/mssql/server:${dockerTag}
-    env:
-    - name: TZ
-      value: Europe/Berlin
-    - name: ACCEPT_EULA
-      value: Y
-    - name: SA_PASSWORD
-      value: cambpm-123#
-    resources:
-      limits:
-        cpu: ${cpuLimit}
-        memory: ${memoryLimit}Gi
-      requests:
-        cpu: ${cpuLimit}
-        memory: ${memoryLimit}Gi
+        cpu: "800m"
+        memory: "4Gi"
+    volumeMounts:
+    - mountPath: "/home/work"
+      name: "workspace-volume"
   """
 }
 
@@ -149,276 +131,276 @@ pipeline {
         }
       }
     }
-    stage('h2 tests') {
-      parallel {
-        stage('engine-UNIT-h2') {
-          when {
-            anyOf {
-              branch 'pipeline-master';
-              allOf {
-                changeRequest();
-                expression {
-                  withLabels('h2')
-                }
-              }
-            }
-          }
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine/', ' test -Pdatabase,h2')
-            }
-          }
-        }
-        stage('engine-UNIT-authorizations-h2') {
-          when {
-            anyOf {
-              branch 'pipeline-master';
-              allOf {
-                changeRequest();
-                expression {
-                  withLabels('h2')
-                }
-              }
-            }
-          }
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine/', 'test -Pdatabase,h2,cfgAuthorizationCheckRevokesAlways')
-            }
-          }
-        }
-        stage('engine-rest-UNIT-jersey-2') {
-          when {
-            anyOf {
-              branch 'pipeline-master';
-              allOf {
-                changeRequest();
-                expression {
-                  withLabels('rest')
-                }
-              }
-            }
-          }
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine-rest/engine-rest/', 'clean install -Pjersey2')
-            }
-          }
-        }
-        stage('engine-rest-UNIT-resteasy3') {
-          when {
-            anyOf {
-              branch 'pipeline-master';
-              allOf {
-                changeRequest();
-                expression {
-                  withLabels('rest')
-                }
-              }
-            }
-          }
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine-rest/engine-rest/', 'clean install -Presteasy3')
-            }
-          }
-        }
-        stage('webapp-UNIT-h2') {
-          when {
-            anyOf {
-              branch 'pipeline-master';
-              allOf {
-                changeRequest();
-                expression {
-                  withLabels('webapps')
-                }
-              }
-            }
-          }
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'webapps/', 'clean test -Pdatabase,h2 -Dskip.frontend.build=true')
-            }
-          }
-        }
-        stage('engine-IT-tomcat-9-h2') {// TODO change it to `postgresql-96`
-          when {
-            anyOf {
-              branch 'pipeline-master';
-              allOf {
-                changeRequest();
-                expression {
-                  withLabels('IT')
-                }
-              }
-            }
-          }
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                runMaven(true, true, 'qa/', 'clean install -Ptomcat,h2,engine-integration')
-              }
-            }
-          }
-          post {
-            always {
-              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
-            }
-          }
-        }
-        stage('webapp-IT-tomcat-9-h2') {
-          when {
-            anyOf {
-              branch 'pipeline-master';
-              allOf {
-                changeRequest();
-                expression {
-                  withLabels('webapps', 'IT')
-                }
-              }
-            }
-          }
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/chrome:78v0.1.2')
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                runMaven(true, true,'qa/', 'clean install -Ptomcat,h2,webapps-integration')
-              }
-            }
-          }
-          post {
-            always {
-              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
-            }
-          }
-        }
-        stage('webapp-IT-standalone-wildfly') {
-          when {
-            anyOf {
-              branch 'pipeline-master';
-              allOf {
-                changeRequest();
-                expression {
-                  withLabels('webapps', 'IT')
-                }
-              }
-            }
-          }
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/chrome:78v0.1.2')
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                runMaven(true, true,'qa/', 'clean install -Pwildfly-vanilla,webapps-integration-sa')
-              }
-            }
-          }
-        }
-        stage('camunda-run-IT') {
-          when {
-            anyOf {
-              branch 'pipeline-master';
-              allOf {
-                changeRequest();
-                expression {
-                  withLabels('IT', 'run', 'spring-boot')
-                }
-              }
-            }
-          }
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/chrome:78v0.1.2', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                runMaven(true, true,'distro/run/', 'clean install -Pintegration-test-camunda-run')
-              }
-            }
-          }
-          post {
-            always {
-              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
-            }
-          }
-        }
-        stage('spring-boot-starter-IT') {
-          when {
-            anyOf {
-              branch 'pipeline-master';
-              allOf {
-                changeRequest();
-                expression {
-                  withLabels('IT', 'spring-boot')
-                }
-              }
-            }
-          }
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/chrome:78v0.1.2', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                runMaven(true, true,'spring-boot-starter/', 'clean install -Pintegration-test-spring-boot-starter')
-              }
-            }
-          }
-          post {
-            always {
-              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
-            }
-          }
-        }
-      }
-    }
+//    stage('h2 tests') {
+//      parallel {
+//        stage('engine-UNIT-h2') {
+//          when {
+//            anyOf {
+//              branch 'pipeline-master';
+//              allOf {
+//                changeRequest();
+//                expression {
+//                  withLabels('h2')
+//                }
+//              }
+//            }
+//          }
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, false,'engine/', ' test -Pdatabase,h2')
+//            }
+//          }
+//        }
+//        stage('engine-UNIT-authorizations-h2') {
+//          when {
+//            anyOf {
+//              branch 'pipeline-master';
+//              allOf {
+//                changeRequest();
+//                expression {
+//                  withLabels('h2')
+//                }
+//              }
+//            }
+//          }
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, false,'engine/', 'test -Pdatabase,h2,cfgAuthorizationCheckRevokesAlways')
+//            }
+//          }
+//        }
+//        stage('engine-rest-UNIT-jersey-2') {
+//          when {
+//            anyOf {
+//              branch 'pipeline-master';
+//              allOf {
+//                changeRequest();
+//                expression {
+//                  withLabels('rest')
+//                }
+//              }
+//            }
+//          }
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, false,'engine-rest/engine-rest/', 'clean install -Pjersey2')
+//            }
+//          }
+//        }
+//        stage('engine-rest-UNIT-resteasy3') {
+//          when {
+//            anyOf {
+//              branch 'pipeline-master';
+//              allOf {
+//                changeRequest();
+//                expression {
+//                  withLabels('rest')
+//                }
+//              }
+//            }
+//          }
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, false,'engine-rest/engine-rest/', 'clean install -Presteasy3')
+//            }
+//          }
+//        }
+//        stage('webapp-UNIT-h2') {
+//          when {
+//            anyOf {
+//              branch 'pipeline-master';
+//              allOf {
+//                changeRequest();
+//                expression {
+//                  withLabels('webapps')
+//                }
+//              }
+//            }
+//          }
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, false,'webapps/', 'clean test -Pdatabase,h2 -Dskip.frontend.build=true')
+//            }
+//          }
+//        }
+//        stage('engine-IT-tomcat-9-h2') {// TODO change it to `postgresql_96`
+//          when {
+//            anyOf {
+//              branch 'pipeline-master';
+//              allOf {
+//                changeRequest();
+//                expression {
+//                  withLabels('IT')
+//                }
+//              }
+//            }
+//          }
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+//                runMaven(true, true, 'qa/', 'clean install -Ptomcat,h2,engine-integration')
+//              }
+//            }
+//          }
+//          post {
+//            always {
+//              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+//            }
+//          }
+//        }
+//        stage('webapp-IT-tomcat-9-h2') {
+//          when {
+//            anyOf {
+//              branch 'pipeline-master';
+//              allOf {
+//                changeRequest();
+//                expression {
+//                  withLabels('webapps', 'IT')
+//                }
+//              }
+//            }
+//          }
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/chrome:78v0.1.2')
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+//                runMaven(true, true,'qa/', 'clean install -Ptomcat,h2,webapps-integration')
+//              }
+//            }
+//          }
+//          post {
+//            always {
+//              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+//            }
+//          }
+//        }
+//        stage('webapp-IT-standalone-wildfly') {
+//          when {
+//            anyOf {
+//              branch 'pipeline-master';
+//              allOf {
+//                changeRequest();
+//                expression {
+//                  withLabels('webapps', 'IT')
+//                }
+//              }
+//            }
+//          }
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/chrome:78v0.1.2')
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+//                runMaven(true, true,'qa/', 'clean install -Pwildfly-vanilla,webapps-integration-sa')
+//              }
+//            }
+//          }
+//        }
+//        stage('camunda-run-IT') {
+//          when {
+//            anyOf {
+//              branch 'pipeline-master';
+//              allOf {
+//                changeRequest();
+//                expression {
+//                  withLabels('IT', 'run', 'spring-boot')
+//                }
+//              }
+//            }
+//          }
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/chrome:78v0.1.2', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+//                runMaven(true, true,'distro/run/', 'clean install -Pintegration-test-camunda-run')
+//              }
+//            }
+//          }
+//          post {
+//            always {
+//              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+//            }
+//          }
+//        }
+//        stage('spring-boot-starter-IT') {
+//          when {
+//            anyOf {
+//              branch 'pipeline-master';
+//              allOf {
+//                changeRequest();
+//                expression {
+//                  withLabels('IT', 'spring-boot')
+//                }
+//              }
+//            }
+//          }
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/chrome:78v0.1.2', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+//                runMaven(true, true,'spring-boot-starter/', 'clean install -Pintegration-test-spring-boot-starter')
+//              }
+//            }
+//          }
+//          post {
+//            always {
+//              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+//            }
+//          }
+//        }
+//      }
+//    }
     stage("engine-UNIT DB tests") {
       matrix {
         axes {
           axis {
             name 'DB'
-            values 'postgresql-96'
+            values 'postgresql_96'
           }
         }
         when {
@@ -448,179 +430,179 @@ pipeline {
         }
       }
     }
-    stage("engine-UNIT-authorizations DB tests") {
-      matrix {
-        axes {
-          axis {
-            name 'DB'
-            values 'postgresql-96'
-          }
-        }
-        agent {
-          kubernetes {
-            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
-          }
-        }
-        stages {
-          stage("engine-UNIT-authorizations") {
-            steps {
-              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-                runMaven(true, false,'engine/', 'clean test -PcfgAuthorizationCheckRevokesAlways' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
-              }
-            }
-          }
-        }
-      }
-    }
-    stage("webapp-UNIT DB tests") {
-      matrix {
-        axes {
-          axis {
-            name 'DB'
-            values 'postgresql-96'
-          }
-        }
-        agent {
-          kubernetes {
-            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
-          }
-        }
-        stages {
-          stage("webapp-UNIT") {
-            steps {
-              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-                runMaven(true, false,'webapps/', 'clean test -Dskip.frontend.build=true -P' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
-              }
-            }
-          }
-        }
-      }
-    }
-    stage("webapp-UNIT-authorizations DB tests") {
-      matrix {
-        axes {
-          axis {
-            name 'DB'
-            values 'postgresql-96'
-          }
-        }
-        agent {
-          kubernetes {
-            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
-          }
-        }
-        stages {
-          stage("webapp-UNIT-authorizations") {
-            steps {
-              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-                runMaven(true, false,'webapps/', 'clean test -Dskip.frontend.build=true -PcfgAuthorizationCheckRevokesAlways' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
-              }
-            }
-          }
-        }
-      }
-    }
-    stage('db tests + CE webapps IT + EE platform') {
-      parallel {
-        stage('engine-api-compatibility') {
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine/', 'clean verify -Pcheck-api-compatibility')
-            }
-          }
-        }
-        stage('engine-UNIT-plugins') {
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine/', 'clean test -Pcheck-plugins')
-            }
-          }
-        }
-        stage('engine-UNIT-database-table-prefix') {
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine/', 'clean test -Pdb-table-prefix')
-            }
-          }
-        }
-        stage('webapp-UNIT-database-table-prefix') {
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              nodejs('nodejs-14.6.0'){
-                runMaven(true, false,'webapps/', 'clean test -Pdb-table-prefix')
-              }
-            }
-          }
-        }
-        stage('engine-UNIT-wls-compatibility') {
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'.', 'clean verify -Pcheck-engine,wls-compatibility,jersey')
-            }
-          }
-        }
-        stage('IT-wildfly-domain') {
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, true,'qa/', 'clean install -Pwildfly-domain,h2,engine-integration')
-            }
-          }
-        }
-        stage('IT-wildfly-servlet') {
-          agent {
-            kubernetes {
-              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-            }
-          }
-          steps{
-            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, true,'qa/', 'clean install -Pwildfly,wildfly-servlet,h2,engine-integration')
-            }
-          }
-        }
-//        stage('EE-platform-DISTRO-dummy') {
+//    stage("engine-UNIT-authorizations DB tests") {
+//      matrix {
+//        axes {
+//          axis {
+//            name 'DB'
+//            values 'postgresql_96'
+//          }
+//        }
+//        agent {
+//          kubernetes {
+//            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
+//          }
+//        }
+//        stages {
+//          stage("engine-UNIT-authorizations") {
+//            steps {
+//              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//                runMaven(true, false,'engine/', 'clean test -PcfgAuthorizationCheckRevokesAlways' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
+//              }
+//            }
+//          }
+//        }
+//      }
+//    }
+//    stage("webapp-UNIT DB tests") {
+//      matrix {
+//        axes {
+//          axis {
+//            name 'DB'
+//            values 'postgresql_96'
+//          }
+//        }
+//        agent {
+//          kubernetes {
+//            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
+//          }
+//        }
+//        stages {
+//          stage("webapp-UNIT") {
+//            steps {
+//              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//                runMaven(true, false,'webapps/', 'clean test -Dskip.frontend.build=true -P' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
+//              }
+//            }
+//          }
+//        }
+//      }
+//    }
+//    stage("webapp-UNIT-authorizations DB tests") {
+//      matrix {
+//        axes {
+//          axis {
+//            name 'DB'
+//            values 'postgresql_96'
+//          }
+//        }
+//        agent {
+//          kubernetes {
+//            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
+//          }
+//        }
+//        stages {
+//          stage("webapp-UNIT-authorizations") {
+//            steps {
+//              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//                runMaven(true, false,'webapps/', 'clean test -Dskip.frontend.build=true -PcfgAuthorizationCheckRevokesAlways' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
+//              }
+//            }
+//          }
+//        }
+//      }
+//    }
+//    stage('db tests + CE webapps IT + EE platform') {
+//      parallel {
+//        stage('engine-api-compatibility') {
 //          agent {
 //            kubernetes {
 //              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, false,'engine/', 'clean verify -Pcheck-api-compatibility')
 //            }
 //          }
 //        }
-      }
-    }
+//        stage('engine-UNIT-plugins') {
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, false,'engine/', 'clean test -Pcheck-plugins')
+//            }
+//          }
+//        }
+//        stage('engine-UNIT-database-table-prefix') {
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, false,'engine/', 'clean test -Pdb-table-prefix')
+//            }
+//          }
+//        }
+//        stage('webapp-UNIT-database-table-prefix') {
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              nodejs('nodejs-14.6.0'){
+//                runMaven(true, false,'webapps/', 'clean test -Pdb-table-prefix')
+//              }
+//            }
+//          }
+//        }
+//        stage('engine-UNIT-wls-compatibility') {
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, false,'.', 'clean verify -Pcheck-engine,wls-compatibility,jersey')
+//            }
+//          }
+//        }
+//        stage('IT-wildfly-domain') {
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, true,'qa/', 'clean install -Pwildfly-domain,h2,engine-integration')
+//            }
+//          }
+//        }
+//        stage('IT-wildfly-servlet') {
+//          agent {
+//            kubernetes {
+//              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//            }
+//          }
+//          steps{
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//              runMaven(true, true,'qa/', 'clean install -Pwildfly,wildfly-servlet,h2,engine-integration')
+//            }
+//          }
+//        }
+////        stage('EE-platform-DISTRO-dummy') {
+////          agent {
+////            kubernetes {
+////              yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+////            }
+////          }
+////          steps{
+////            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest') {
+////            }
+////          }
+////        }
+//      }
+//    }
   }
   post {
     changed {
@@ -661,7 +643,7 @@ void withDbLabels(String dbLabel) {
 }
 
 String getDbType(String dbLabel) {
-  String[] database = dbLabel.split("-")
+  String[] database = dbLabel.split("_")
   return database[0]
 }
 
