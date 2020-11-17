@@ -21,7 +21,7 @@ import classNames from "classnames";
 import DropdownOption from "./DropdownOption";
 import "./Dropdown.scss";
 
-export default function Dropdown({ title, children, position }) {
+export default function Dropdown({ title, children, position = "left" }) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef(null);
 
