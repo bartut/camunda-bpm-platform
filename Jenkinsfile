@@ -401,17 +401,17 @@ pipeline {
             values 'postgresql_96'
           }
         }
-        when {
-          anyOf {
-            branch 'pipeline-master';
-            allOf {
-              changeRequest();
-              expression {
-                withLabels("all-db") || withDbLabel(env.DB)
-              }
-            }
-          }
-        }
+//        when {
+//          anyOf {
+//            branch 'pipeline-master';
+//            allOf {
+//              changeRequest();
+//              expression {
+//                withLabels("all-db") || withDbLabel(env.DB)
+//              }
+//            }
+//          }
+//        }
         agent {
           kubernetes {
             yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
