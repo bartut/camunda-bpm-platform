@@ -51,7 +51,7 @@ pipeline {
         }
       }
       steps {
-          withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+          withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsFilePath: './settings.xml') {
             sh '''
               mvn --version
               java -version
