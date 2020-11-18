@@ -366,7 +366,7 @@ pipeline {
           stage("engine-UNIT") {
             steps {
               withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings', mavenSettingsFilePath: '.ci/maven/nexus-settings.xml') {
-                runMaven(true, false,'engine/', 'clean test -Pdatabase' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
+                runMaven(true, false,'engine/', 'clean test -Pdatabase,' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
               }
             }
           }
