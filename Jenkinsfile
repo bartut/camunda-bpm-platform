@@ -1,5 +1,3 @@
-#!/usr/bin/env groovy
-
 // https://github.com/camunda/jenkins-global-shared-library
 @Library('camunda-ci') _
 
@@ -68,6 +66,8 @@ String getDbAgent(String dbLabel) {
 }
 
 String getPostgresAgent(String dbLabel, String dockerTag = '9.6v0.2.2'){
+  String mavenForkCount = cpuLimit;
+  String mavenMemoryLimit = cpuLimit * 2;
   """
 metadata:
   labels:
@@ -83,10 +83,10 @@ spec:
     tty: true
     resources:
       limits:
-        memory: "4Gi"
+        memory: ${mavenMemoryLimit}Gi
       requests:
-        cpu: "800m"
-        memory: "4Gi"
+        cpu: ${cpuLimit}
+        memory: ${mavenMemoryLimit}Gi
     volumeMounts:
     - mountPath: "/home/work"
       name: "workspace-volume"
@@ -111,35 +111,35 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '5')) //, artifactNumToKeepStr: '30'
   }
   stages {
-    stage('ASSEMBLY') {
-      agent {
-        kubernetes {
-          yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
-        }
-      }
-      steps {
-        withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-          sh '''
-            mvn --version
-            java -version
-          '''
-          nodejs('nodejs-14.6.0'){
-            sh '''
-              node -v
-              npm version
-            '''
-            configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-              sh """
-                mvn -s \$MAVEN_SETTINGS_XML clean install source:jar -Pdistro,distro-ce,distro-wildfly,distro-webjar -DskipTests -Dmaven.repo.local=\$(pwd)/.m2 com.mycila:license-maven-plugin:check -B
-              """
-            }
-          }
-            stash name: "platform-stash-runtime", includes: ".m2/org/camunda/**/*-SNAPSHOT/**", excludes: "**/qa/**,**/*qa*/**,**/*.zip,**/*.tar.gz"
-            stash name: "platform-stash-qa", includes: ".m2/org/camunda/bpm/**/qa/**/*-SNAPSHOT/**,.m2/org/camunda/bpm/**/*qa*/**/*-SNAPSHOT/**", excludes: "**/*.zip,**/*.tar.gz"
-            stash name: "platform-stash-distro", includes: ".m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.zip,.m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.tar.gz"
-        }
-      }
-    }
+//    stage('ASSEMBLY') {
+//      agent {
+//        kubernetes {
+//          yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//        }
+//      }
+//      steps {
+//        withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+//          sh '''
+//            mvn --version
+//            java -version
+//          '''
+//          nodejs('nodejs-14.6.0'){
+//            sh '''
+//              node -v
+//              npm version
+//            '''
+//            configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+//              sh """
+//                mvn -s \$MAVEN_SETTINGS_XML clean install source:jar -Pdistro,distro-ce,distro-wildfly,distro-webjar -DskipTests -Dmaven.repo.local=\$(pwd)/.m2 com.mycila:license-maven-plugin:check -B
+//              """
+//            }
+//          }
+//            stash name: "platform-stash-runtime", includes: ".m2/org/camunda/**/*-SNAPSHOT/**", excludes: "**/qa/**,**/*qa*/**,**/*.zip,**/*.tar.gz"
+//            stash name: "platform-stash-qa", includes: ".m2/org/camunda/bpm/**/qa/**/*-SNAPSHOT/**,.m2/org/camunda/bpm/**/*qa*/**/*-SNAPSHOT/**", excludes: "**/*.zip,**/*.tar.gz"
+//            stash name: "platform-stash-distro", includes: ".m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.zip,.m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.tar.gz"
+//        }
+//      }
+//    }
 //    stage('h2 tests') {
 //      parallel {
 //        stage('engine-UNIT-h2') {
@@ -634,8 +634,8 @@ pipeline {
 }
 
 void runMaven(boolean runtimeStash, boolean distroStash, String directory, String cmd) {
-  if (runtimeStash) unstash "platform-stash-runtime"
-  if (distroStash) unstash "platform-stash-distro"
+//  if (runtimeStash) unstash "platform-stash-runtime"
+//  if (distroStash) unstash "platform-stash-distro"
   configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
     sh("export MAVEN_OPTS='-Dmaven.repo.local=\$(pwd)/.m2' && cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -B -Dmaven.repo.local=\$(pwd)/.m2")
   }
