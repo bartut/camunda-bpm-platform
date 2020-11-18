@@ -40,13 +40,12 @@ export default function DiagramBadge({
   }
 
   function handleDrag(event) {
-    // console.log(event, badgeRef.current);
     onDrag(event);
     setDragActive(true);
     badgeRef.current.setAttribute("style", "opacity: 0");
   }
 
-  function handleDrop(event) {
+  function handleDragEnd(event) {
     onDragEnd(event);
     setDragActive(false);
     badgeRef.current.setAttribute("style", "");
@@ -63,7 +62,7 @@ export default function DiagramBadge({
     >
       <span
         onDrag={handleDrag}
-        onDragEnd={handleDrop}
+        onDragEnd={handleDragEnd}
         onDragStart={onDragStart}
         draggable={draggable}
         className={classNames("DiagramBadge badge", className)}
