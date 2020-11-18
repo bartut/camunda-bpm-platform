@@ -628,11 +628,11 @@ Map getDbInfo(String databaseLabel) {
                            version: '9.6v0.2.2',
                            profiles: 'postgresql',
                            extra: ''],
-                       'sqlserver_2017': [
-                           type: 'mssql',
-                           version: '2017v0.1.1',
-                           profiles: 'sqlserver',
-                           extra: '-Ddatabase.name=camunda -Ddatabase.username=sa -Ddatabase.password=cam_123$']
+                       'mariadb_103': [
+                           type: 'mariadb:',
+                           version: '10.3v0.3.2',
+                           profiles: 'mariadb',
+                           extra: '']
   ]
 
   return SUPPORTED_DBS[databaseLabel]
