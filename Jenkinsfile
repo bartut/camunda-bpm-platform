@@ -65,9 +65,7 @@ String getDbAgent(String dbLabel) {
   }
 }
 
-String getPostgresAgent(String dbLabel, String dockerTag = '9.6v0.2.2'){
-  String mavenForkCount = cpuLimit;
-  String mavenMemoryLimit = cpuLimit * 2;
+String getPostgresAgent(String dbLabel, String dockerTag = '9.6v0.2.2', Integer mavenMemoryLimit = 16){
   """
 metadata:
   labels:
@@ -85,7 +83,7 @@ spec:
       limits:
         memory: ${mavenMemoryLimit}Gi
       requests:
-        cpu: ${cpuLimit}
+        cpu: 4
         memory: ${mavenMemoryLimit}Gi
     volumeMounts:
     - mountPath: "/home/work"
