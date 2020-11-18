@@ -39,70 +39,6 @@ spec:
   """
 }
 
-Map getDbInfo(String databaseLabel) {
-  Map SUPPORTED_DBS = ['postgresql_96': [
-                           version: '9.6v0.2.2',
-                           profiles: 'postgresql',
-                           extra: ''],
-                       'sqlserver-2017': [
-                           version: '2017-latest',
-                           profiles: 'sqlserver',
-                           extra: '-Ddatabase.name="master" -Ddatabase.username=sa -Ddatabase.password=cambpm-123#']
-  ]
-
-  return SUPPORTED_DBS[databaseLabel]
-}
-
-String getDbAgent(String dbLabel) {
-  Map dbInfo = getDbInfo(dbLabel)
-  String dbType = getDbType(dbLabel)
-
-  if (dbType == "postgresql") {
-    return getPostgresAgent(dbLabel, dbInfo.version)
-  }
-  if (dbType == 'sqlserver') {
-    return getSqlServerAgent(dbLabel, dbInfo.version)
-  }
-}
-
-String getPostgresAgent(String dbLabel, String dockerTag = '9.6v0.2.2', Integer mavenMemoryLimit = 16){
-  """
-metadata:
-  labels:
-    name: "jenkins-slave-postgresql"
-    feature: "postgresql_${dockerTag}"
-    jenkins: "slave"
-    jenkins/label: "${dbLabel}"
-spec:
-  containers:
-  - name: "jnlp"
-    image: "gcr.io/ci-30-162810/postgresql:${dockerTag}"
-    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
-    tty: true
-    resources:
-      limits:
-        memory: ${mavenMemoryLimit}Gi
-      requests:
-        cpu: 4
-        memory: ${mavenMemoryLimit}Gi
-    volumeMounts:
-    - mountPath: "/home/work"
-      name: "workspace-volume"
-    workingDir: "/home/work"
-    nodeSelector:
-      cloud.google.com/gke-nodepool: "agents-n1-standard-4-netssd-preempt"
-    restartPolicy: "Never"
-    tolerations:
-    - effect: "NoSchedule"
-      key: "agents-n1-standard-4-netssd-preempt"
-      operator: "Exists"
-    volumes:
-    - emptyDir:
-        medium: ""
-      name: "workspace-volume"
-  """
-}
-
 pipeline {
   agent none
   options {
@@ -429,7 +365,7 @@ pipeline {
         stages {
           stage("engine-UNIT") {
             steps {
-              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings', mavenSettingsFilePath: './settings/maven/nexus-settings.xml') {
                 runMaven(true, false,'engine/', 'clean test -P' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
               }
             }
@@ -634,9 +570,7 @@ pipeline {
 void runMaven(boolean runtimeStash, boolean distroStash, String directory, String cmd) {
 //  if (runtimeStash) unstash "platform-stash-runtime"
 //  if (distroStash) unstash "platform-stash-distro"
-  configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-    sh("export MAVEN_OPTS='-Dmaven.repo.local=\$(pwd)/.m2' && cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -B -Dmaven.repo.local=\$(pwd)/.m2")
-  }
+  sh("export MAVEN_OPTS='-Dmaven.repo.local=\$(pwd)/.m2' && cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -B -Dmaven.repo.local=\$(pwd)/.m2")
 }
 
 void withLabels(String... labels) {
@@ -647,6 +581,71 @@ void withLabels(String... labels) {
 
 void withDbLabels(String dbLabel) {
   withLabels(getDbType(dbLabel))
+}
+
+String getPostgresAgent(String dbLabel, String dockerTag = '9.6v0.2.2', Integer cpuLimit = 4){
+  String mavenMemoryLimit = cpuLimit * 4;
+  """
+metadata:
+  labels:
+    name: "jenkins-slave-postgresql"
+    feature: "postgresql_${dockerTag}"
+    jenkins: "slave"
+    jenkins/label: "${dbLabel}"
+spec:
+  containers:
+  - name: "jnlp"
+    image: "gcr.io/ci-30-162810/postgresql:${dockerTag}"
+    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
+    tty: true
+    resources:
+      limits:
+        memory: ${mavenMemoryLimit}Gi
+      requests:
+        cpu: ${cpuLimit}
+        memory: ${mavenMemoryLimit}Gi
+    volumeMounts:
+    - mountPath: "/home/work"
+      name: "workspace-volume"
+    workingDir: "/home/work"
+    nodeSelector:
+      cloud.google.com/gke-nodepool: "agents-n1-standard-4-netssd-preempt"
+    restartPolicy: "Never"
+    tolerations:
+    - effect: "NoSchedule"
+      key: "agents-n1-standard-4-netssd-preempt"
+      operator: "Exists"
+    volumes:
+    - emptyDir:
+        medium: ""
+      name: "workspace-volume"
+  """
+}
+
+Map getDbInfo(String databaseLabel) {
+  Map SUPPORTED_DBS = ['postgresql_96': [
+      version: '9.6v0.2.2',
+      profiles: 'postgresql',
+      extra: ''],
+                       'sqlserver-2017': [
+                           version: '2017-latest',
+                           profiles: 'sqlserver',
+                           extra: '-Ddatabase.name="master" -Ddatabase.username=sa -Ddatabase.password=cambpm-123#']
+  ]
+
+  return SUPPORTED_DBS[databaseLabel]
+}
+
+String getDbAgent(String dbLabel) {
+  Map dbInfo = getDbInfo(dbLabel)
+  String dbType = getDbType(dbLabel)
+
+  if (dbType == "postgresql") {
+    return getPostgresAgent(dbLabel, dbInfo.version)
+  }
+  if (dbType == 'sqlserver') {
+    return getSqlServerAgent(dbLabel, dbInfo.version)
+  }
 }
 
 String getDbType(String dbLabel) {
