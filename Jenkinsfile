@@ -343,7 +343,7 @@ pipeline {
         axes {
           axis {
             name 'DB'
-            values 'postgresql_96'
+            values 'postgresql_96', 'sqlserver_2017'
           }
         }
 //        when {
@@ -365,7 +365,7 @@ pipeline {
         stages {
           stage("engine-UNIT") {
             steps {
-              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings', mavenSettingsFilePath: './settings/maven/nexus-settings.xml') {
+              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings', mavenSettingsFilePath: '.ci/maven/nexus-settings.xml') {
                 runMaven(true, false,'engine/', 'clean test -P' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
               }
             }
@@ -583,19 +583,19 @@ void withDbLabels(String dbLabel) {
   withLabels(getDbType(dbLabel))
 }
 
-String getPostgresAgent(String dbLabel, String dockerTag = '9.6v0.2.2', Integer cpuLimit = 4){
+String getDbAgent(String dbLabel, Integer cpuLimit = 4){
+  Map dbInfo = getDbInfo(dbLabel)
   String mavenMemoryLimit = cpuLimit * 4;
   """
 metadata:
   labels:
-    name: "jenkins-slave-postgresql"
-    feature: "postgresql_${dockerTag}"
+    name: "jenkins-slave-${dbInfo.type}"
     jenkins: "slave"
     jenkins/label: "${dbLabel}"
 spec:
   containers:
   - name: "jnlp"
-    image: "gcr.io/ci-30-162810/postgresql:${dockerTag}"
+    image: "gcr.io/ci-30-162810/${dbInfo.type}:${dbInfo.version}"
     args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
     tty: true
     resources:
@@ -624,28 +624,18 @@ spec:
 
 Map getDbInfo(String databaseLabel) {
   Map SUPPORTED_DBS = ['postgresql_96': [
-      version: '9.6v0.2.2',
-      profiles: 'postgresql',
-      extra: ''],
-                       'sqlserver-2017': [
-                           version: '2017-latest',
+                           type: 'postgresql',
+                           version: '9.6v0.2.2',
+                           profiles: 'postgresql',
+                           extra: ''],
+                       'sqlserver_2017': [
+                           type: 'mssql',
+                           version: '2017v0.1.1',
                            profiles: 'sqlserver',
-                           extra: '-Ddatabase.name="master" -Ddatabase.username=sa -Ddatabase.password=cambpm-123#']
+                           extra: '-Ddatabase.name=camunda -Ddatabase.username=sa -Ddatabase.password=cam_123$']
   ]
 
   return SUPPORTED_DBS[databaseLabel]
-}
-
-String getDbAgent(String dbLabel) {
-  Map dbInfo = getDbInfo(dbLabel)
-  String dbType = getDbType(dbLabel)
-
-  if (dbType == "postgresql") {
-    return getPostgresAgent(dbLabel, dbInfo.version)
-  }
-  if (dbType == 'sqlserver') {
-    return getSqlServerAgent(dbLabel, dbInfo.version)
-  }
 }
 
 String getDbType(String dbLabel) {
