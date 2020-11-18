@@ -343,7 +343,7 @@ pipeline {
         axes {
           axis {
             name 'DB'
-            values 'postgresql_96', 'sqlserver_2017'
+            values 'postgresql_96', 'mariadb_103'
           }
         }
 //        when {
