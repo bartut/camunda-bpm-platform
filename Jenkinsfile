@@ -90,7 +90,7 @@ spec:
     volumeMounts:
     - mountPath: "/home/work"
       name: "workspace-volume"
-           workingDir: "/home/work"
+    workingDir: "/home/work"
     nodeSelector:
       cloud.google.com/gke-nodepool: "agents-n1-standard-4-netssd-preempt"
     restartPolicy: "Never"
