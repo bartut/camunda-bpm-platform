@@ -343,7 +343,7 @@ pipeline {
         axes {
           axis {
             name 'DB'
-            values 'postgresql_96'
+            values 'postgresql_96', 'mariadb_103', 'sqlserver_2017'
           }
         }
 //        when {
@@ -365,8 +365,8 @@ pipeline {
         stages {
           stage("engine-UNIT") {
             steps {
-              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings', mavenSettingsFilePath: '.ci/maven/nexus-settings.xml') {
-                runMaven(true, false,'engine/', 'clean test -Pdatabase,' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
+              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings', mavenSettingsFilePath: './.ci/maven/nexus-settings.xml') {
+                runMaven(true, false,'engine/', 'clean test -P' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
               }
             }
           }
@@ -632,7 +632,12 @@ Map getDbInfo(String databaseLabel) {
                            type: 'mariadb:',
                            version: '10.3v0.3.2',
                            profiles: 'mariadb',
-                           extra: '']
+                           extra: ''],
+                       'sqlserver_2017': [
+                           type: 'mssql',
+                           version: '2017v0.1.1',
+                           profiles: 'sqlserver',
+                           extra: '-Ddatabase.name=camunda -Ddatabase.username=sa -Ddatabase.password=cam_123$']
   ]
 
   return SUPPORTED_DBS[databaseLabel]
