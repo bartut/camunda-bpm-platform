@@ -52,7 +52,7 @@ pipeline {
 //        }
 //      }
 //      steps {
-//        withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//        withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //          sh '''
 //            mvn --version
 //            java -version
@@ -94,7 +94,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, false,'engine/', ' test -Pdatabase,h2')
 //            }
 //          }
@@ -117,7 +117,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, false,'engine/', 'test -Pdatabase,h2,cfgAuthorizationCheckRevokesAlways')
 //            }
 //          }
@@ -140,7 +140,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, false,'engine-rest/engine-rest/', 'clean install -Pjersey2')
 //            }
 //          }
@@ -163,7 +163,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, false,'engine-rest/engine-rest/', 'clean install -Presteasy3')
 //            }
 //          }
@@ -186,7 +186,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, false,'webapps/', 'clean test -Pdatabase,h2 -Dskip.frontend.build=true')
 //            }
 //          }
@@ -209,7 +209,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 //                runMaven(true, true, 'qa/', 'clean install -Ptomcat,h2,engine-integration')
 //              }
@@ -239,7 +239,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 //                runMaven(true, true,'qa/', 'clean install -Ptomcat,h2,webapps-integration')
 //              }
@@ -269,7 +269,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 //                runMaven(true, true,'qa/', 'clean install -Pwildfly-vanilla,webapps-integration-sa')
 //              }
@@ -294,7 +294,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 //                runMaven(true, true,'distro/run/', 'clean install -Pintegration-test-camunda-run')
 //              }
@@ -324,7 +324,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 //                runMaven(true, true,'spring-boot-starter/', 'clean install -Pintegration-test-spring-boot-starter')
 //              }
@@ -365,7 +365,7 @@ pipeline {
         stages {
           stage("engine-UNIT") {
             steps {
-              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings') {
                 runMaven(true, false,'engine/', 'clean test -P' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
               }
             }
@@ -389,7 +389,7 @@ pipeline {
 //        stages {
 //          stage("engine-UNIT-authorizations") {
 //            steps {
-//              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //                runMaven(true, false,'engine/', 'clean test -PcfgAuthorizationCheckRevokesAlways' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
 //              }
 //            }
@@ -413,7 +413,7 @@ pipeline {
 //        stages {
 //          stage("webapp-UNIT") {
 //            steps {
-//              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //                runMaven(true, false,'webapps/', 'clean test -Dskip.frontend.build=true -P' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
 //              }
 //            }
@@ -437,7 +437,7 @@ pipeline {
 //        stages {
 //          stage("webapp-UNIT-authorizations") {
 //            steps {
-//              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //                runMaven(true, false,'webapps/', 'clean test -Dskip.frontend.build=true -PcfgAuthorizationCheckRevokesAlways' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
 //              }
 //            }
@@ -454,7 +454,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, false,'engine/', 'clean verify -Pcheck-api-compatibility')
 //            }
 //          }
@@ -466,7 +466,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, false,'engine/', 'clean test -Pcheck-plugins')
 //            }
 //          }
@@ -478,7 +478,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, false,'engine/', 'clean test -Pdb-table-prefix')
 //            }
 //          }
@@ -490,7 +490,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              nodejs('nodejs-14.6.0'){
 //                runMaven(true, false,'webapps/', 'clean test -Pdb-table-prefix')
 //              }
@@ -504,7 +504,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, false,'.', 'clean verify -Pcheck-engine,wls-compatibility,jersey')
 //            }
 //          }
@@ -516,7 +516,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, true,'qa/', 'clean install -Pwildfly-domain,h2,engine-integration')
 //            }
 //          }
@@ -528,7 +528,7 @@ pipeline {
 //            }
 //          }
 //          steps{
-//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'mavenSettingsConfig') {
+//            withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'camunda-public-maven-settings'') {
 //              runMaven(true, true,'qa/', 'clean install -Pwildfly,wildfly-servlet,h2,engine-integration')
 //            }
 //          }
