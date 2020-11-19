@@ -365,7 +365,7 @@ pipeline {
         stages {
           stage("engine-UNIT") {
             steps {
-              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings', mavenSettingsFilePath: './settings/maven/nexus-settings.xml') {
+              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings', mavenSettingsFilePath: '\${WORKSPACE}/.ci/maven/nexus-settings.xml') {
                 runMaven(true, false,'engine/', 'clean test -P' + getDbProfiles(env.DB) + " " + getDbExtras(env.DB))
               }
             }
@@ -571,7 +571,7 @@ void runMaven(boolean runtimeStash, boolean distroStash, String directory, Strin
 //  if (runtimeStash) unstash "platform-stash-runtime"
 //  if (distroStash) unstash "platform-stash-distro"
   configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-    sh("export MAVEN_OPTS='-Dmaven.repo.local=\$(pwd)/.m2' && cd ${directory} && mvn -s \${WORKSPACE}/.ci/maven/nexus-settings.xml ${cmd} -B -Dmaven.repo.local=\$(pwd)/.m2 -X")
+    sh("export MAVEN_OPTS='-Dmaven.repo.local=\$(pwd)/.m2' && cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -B -Dmaven.repo.local=\$(pwd)/.m2 -X")
   }
 }
 
