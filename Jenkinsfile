@@ -343,7 +343,7 @@ pipeline {
         axes {
           axis {
             name 'DB'
-            values 'postgresql_96', 'mariadb_103', 'sqlserver_2017'
+            values 'postgresql_96'
           }
         }
 //        when {
@@ -570,7 +570,7 @@ pipeline {
 void runMaven(boolean runtimeStash, boolean distroStash, String directory, String cmd) {
 //  if (runtimeStash) unstash "platform-stash-runtime"
 //  if (distroStash) unstash "platform-stash-distro"
-  sh("export MAVEN_OPTS='-Dmaven.repo.local=\$(pwd)/.m2' && cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -B -Dmaven.repo.local=\$(pwd)/.m2")
+  sh("export MAVEN_OPTS='-Dmaven.repo.local=\$(pwd)/.m2' && cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -B -Dmaven.repo.local=\$(pwd)/.m2 -X")
 }
 
 void withLabels(String... labels) {
