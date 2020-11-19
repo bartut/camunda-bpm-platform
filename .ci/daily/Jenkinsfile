@@ -41,10 +41,38 @@ spec:
 
 pipeline {
   agent none
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '5')) //, artifactNumToKeepStr: '30'
+  }
   triggers {
-    pollSCM('H H(0-7) * * *')
+    // trigger every day between 00:00 and 07:00
+    pollSCM ignorePostCommitHooks: true, scmpoll_spec: 'H H(0-7) * * *'
+  }
+  parameters {
+    buildSelector(
+        name: 'copyArtifactSelector',
+        description: 'A build to take the artifacts from'
+    )
+    booleanParam defaultValue: true, description: '', name: 'STANDALONE'
   }
   stages {
+    stage ('Prepare') {
+      agent {
+        kubernetes {
+          yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+        }
+      }
+      when {
+        expression { params.STANDALONE == false }
+      }
+      steps {
+        copyArtifacts(projectName: 'cambpm-jenkins-pipelines/pipeline-artifact-transfer-main-qa', fingerprintArtifacts: true, selector: buildParameter('copyArtifactSelector'), optional: true)
+        sh 'ls -al'
+        stash name: "platform-stash-runtime", includes: ".m2/org/camunda/bpm/**/*-SNAPSHOT/**", excludes: "**/qa/**,**/*qa*/**,**/*.zip,**/*.tar.gz"
+        stash name: "platform-stash-qa", includes: ".m2/org/camunda/bpm/**/qa/**/*-SNAPSHOT/**,.m2/org/camunda/bpm/**/*qa*/**/*-SNAPSHOT/**", excludes: "**/*.zip,**/*.tar.gz"
+//        stash name: "platform-stash-distro", includes: ".m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.zip,.m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.tar.gz"
+      }
+    }
     stage('check-sql-scripts') {
       agent {
         kubernetes {
@@ -52,6 +80,7 @@ pipeline {
         }
       }
       steps {
+        unstash "platform-stash-distro"
         sh '.ci/scripts/check-sql-scripts.sh'
       }
     }
@@ -197,28 +226,17 @@ pipeline {
         }
       }
     }
-    stage('sql-scripts DBs') {
-      matrix {
-        axes {
-          axis {
-            name 'DB'
-            values 'postgresql_96', 'mariadb_103'
-          }
-        }
-        agent {
-          kubernetes {
-            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
-          }
-        }
-//        when {
-//          anyOf {
-//            branch 'pipeline-qa-master';
-//            allOf {
-//              changeRequest();
-//              expression {
-//                withLabels("all-db") || withDbLabel(env.DB)
-//              }
-//            }
+//    stage('sql-scripts DBs') {
+//      matrix {
+//        axes {
+//          axis {
+//            name 'DB'
+//            values 'postgresql_96', 'mariadb_103'
+//          }
+//        }
+//        agent {
+//          kubernetes {
+//            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
 //          }
 //        }
         stages {
@@ -401,54 +419,137 @@ pipeline {
 //            }
 //          }
 //        }
-        stages {
-          stage('JDK') {
-            steps {
-//              withMaven(jdk: '\${env.JDK}', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-//                runMaven(true, true, true, '.', 'install source:jar source:test-jar -Pdistro,distro-wildfly,distro-webjar')
-//              }
-              sh 'exit 0'
-            }
-          }
-        }
-      }
-    }
-    stage('PERFORMANCE-large-data DBs') {
-      matrix {
-        axes {
-          axis {
-            name 'DB'
-            values 'postgresql_96', 'mariadb_103'
-          }
-        }
-        agent {
-          kubernetes {
-            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
-          }
-        }
-//        when {
-//          anyOf {
-//            branch 'pipeline-qa-master';
-//            allOf {
-//              changeRequest();
-//              expression {
-//                withLabels("all-db") || withDbLabel(env.DB)
-//              }
+//        agent {
+//          kubernetes {
+//            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
+//          }
+//        }
+////        when {
+////          anyOf {
+////            branch 'pipeline-qa-master';
+////            allOf {
+////              changeRequest();
+////              expression {
+////                withLabels("all-db") || withDbLabel(env.DB)
+////              }
+////            }
+////          }
+////        }
+//        stages {
+//          stage('UPGRADE-old-engine-from-714') {
+//            steps {
+////              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+////                runMaven(true, true, true,'qa/', 'verify -Pold-engine,' + getDbProfiles(env.DB))
+////              }
+//              sh 'exit 0'
 //            }
 //          }
 //        }
-        stages {
-          stage('PERFORMANCE-large-data') {
-            steps {
-//              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-//                runMaven(true, true, true,'qa/large-data-tests/', 'verify -Plarge-data-tests,' + getDbProfiles(env.DB))
-//              }
-              sh 'exit 0'
-            }
-          }
-        }
-      }
-    }
+//      }
+//    }
+//    stage('UPGRADE-rolling-update DBs') {
+//      matrix {
+//        axes {
+//          axis {
+//            name 'DB'
+//            values 'postgresql_96', 'mariadb_103'
+//          }
+//        }
+////        when {
+////          anyOf {
+////            branch 'pipeline-qa-master';
+////            allOf {
+////              changeRequest();
+////              expression {
+////                withLabels("all-db") || withDbLabel(env.DB)
+////              }
+////            }
+////          }
+////        }
+//        stages {
+//          stage('UPGRADE-rolling-update') {
+//            steps {
+////              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+////                runMaven(true, true, true,'qa/test-db-rolling-update/', 'verify -Prolling-update,' + getDbProfiles(env.DB))
+////              }
+//              sh 'exit 0'
+//            }
+//          }
+//        }
+//      }
+//    }
+//    stage('JDKs') {
+//      matrix {
+//        axes {
+//          axis {
+//            name 'JDK'
+//            values 'openjdk-jdk-8-latest'
+//          }
+//        }
+//        agent {
+//          kubernetes {
+//            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16)
+//          }
+//        }
+////        when {
+////          anyOf {
+////            branch 'pipeline-qa-master';
+////            allOf {
+////              changeRequest();
+////              expression {
+////                withLabels("jdk")
+////              }
+////            }
+////          }
+////        }
+//        stages {
+//          stage('JDK') {
+//            steps {
+////              withMaven(jdk: '\${env.JDK}', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+////                runMaven(true, true, true, '.', 'install source:jar source:test-jar -Pdistro,distro-wildfly,distro-webjar')
+////              }
+//              sh 'exit 0'
+//            }
+//          }
+//        }
+//      }
+//    }
+//    stage('PERFORMANCE-large-data DBs') {
+//      matrix {
+//        axes {
+//          axis {
+//            name 'DB'
+//            values 'postgresql_96', 'mariadb_103'
+//          }
+//        }
+//        agent {
+//          kubernetes {
+//            yaml getAgent('gcr.io/ci-30-162810/centos:v0.4.6', 16) + getDbAgent(env.DB)
+//          }
+//        }
+////        when {
+////          anyOf {
+////            branch 'pipeline-qa-master';
+////            allOf {
+////              changeRequest();
+////              expression {
+////                withLabels("all-db") || withDbLabel(env.DB)
+////              }
+////            }
+////          }
+////        }
+//        stages {
+//          stage('PERFORMANCE-large-data') {
+//            steps {
+////              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
+////                runMaven(true, true, true,'qa/large-data-tests/', 'verify -Plarge-data-tests,' + getDbProfiles(env.DB))
+////              }
+//              sh 'exit 0'
+//            }
+//          }
+//        }
+//      }
+//    }
   }
   post {
     changed {
@@ -471,11 +572,11 @@ pipeline {
 }
 
 void runMaven(boolean runtimeStash, boolean distroStash, boolean qaStash, String directory, String cmd) {
-//  if (runtimeStash) unstash "platform-stash-runtime"
-//  if (distroStash) unstash "platform-stash-distro"
-//  if (qaStash) unstash "platform-stash-qa"
+  if (runtimeStash) unstash "platform-stash-runtime"
+  if (distroStash) unstash "platform-stash-distro"
+  if (qaStash) unstash "platform-stash-qa"
   configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-    sh("export MAVEN_OPTS='-Dmaven.repo.local=\$(pwd)/.m2' && cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -B")
+    sh("cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -Dmaven.repo.local=\${WORKSPACE}/.m2 -nsu -B")
   }
 }
 
