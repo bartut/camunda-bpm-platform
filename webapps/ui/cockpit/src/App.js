@@ -40,7 +40,16 @@ import {
 import PluginPoint from "utils/PluginPoint";
 import { UserProvider, PreviousLocationProvider } from "./modules/HOC";
 import { loadConfig } from "utils/config";
-import { ProcessInstanceProvider } from "./components/ProcessInstance/HOC/withProcessInstance";
+import withProcessInstance, {
+  ProcessInstanceProvider
+} from "./components/ProcessInstance/HOC/withProcessInstance";
+import { BpmnProvider as OriginialBpmnProvider } from "./components/ProcessInstance/HOC/withBpmn";
+
+const BpmnProvider = withProcessInstance(({ processInstance, children }) => (
+  <OriginialBpmnProvider processDefinitionId={processInstance.definitionId}>
+    {children}
+  </OriginialBpmnProvider>
+));
 
 const DefaultWrapper = ({ children }) => children;
 function AngularRoute({
@@ -121,7 +130,7 @@ function App() {
                 wrapApp={({ children, params }) => {
                   return (
                     <ProcessInstanceProvider processInstanceId={params.id}>
-                      {children}
+                      <BpmnProvider>{children}</BpmnProvider>
                     </ProcessInstanceProvider>
                   );
                 }}
