@@ -66,11 +66,11 @@ pipeline {
         expression { params.STANDALONE == false }
       }
       steps {
-        copyArtifacts(projectName: 'cambpm-jenkins-pipelines/\${env.BRANCH_NAME}', fingerprintArtifacts: true, selector: buildParameter('copyArtifactSelector'), optional: true)
+        copyArtifacts(projectName: "cambpm-jenkins-pipelines/${env.BRANCH_NAME}", fingerprintArtifacts: true, selector: buildParameter("copyArtifactSelector"), optional: true)
         sh 'ls -al'
         stash name: "platform-stash-runtime", includes: ".m2/org/camunda/bpm/**/*-SNAPSHOT/**", excludes: "**/qa/**,**/*qa*/**,**/*.zip,**/*.tar.gz"
         stash name: "platform-stash-qa", includes: ".m2/org/camunda/bpm/**/qa/**/*-SNAPSHOT/**,.m2/org/camunda/bpm/**/*qa*/**/*-SNAPSHOT/**", excludes: "**/*.zip,**/*.tar.gz"
-//        stash name: "platform-stash-distro", includes: ".m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.zip,.m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.tar.gz"
+        stash name: "platform-stash-distro", includes: ".m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.zip,.m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.tar.gz"
       }
     }
     stage('check-sql-scripts') {
@@ -314,7 +314,7 @@ pipeline {
           stage('UPGRADE-instance-migration') {
             steps {
 //              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-//                runMaven(true, true, true,'qa/test-db-instance-migration/', 'verify -Pinstance-migration,' + getDbProfiles(env.DB))
+//                runMaven(true, true, true, 'qa/test-db-instance-migration/', 'verify -Pinstance-migration,' + getDbProfiles(env.DB))
 //              }
               sh 'exit 0'
             }
@@ -350,7 +350,7 @@ pipeline {
           stage('UPGRADE-old-engine-from-714') {
             steps {
 //              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-//                runMaven(true, true, true,'qa/', 'verify -Pold-engine,' + getDbProfiles(env.DB))
+//                runMaven(true, true, true, 'qa/', 'verify -Pold-engine,' + getDbProfiles(env.DB))
 //              }
               sh 'exit 0'
             }
@@ -386,7 +386,7 @@ pipeline {
           stage('UPGRADE-rolling-update') {
             steps {
 //              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-//                runMaven(true, true, true,'qa/test-db-rolling-update/', 'verify -Prolling-update,' + getDbProfiles(env.DB))
+//                runMaven(true, true, true, 'qa/test-db-rolling-update/', 'verify -Prolling-update,' + getDbProfiles(env.DB))
 //              }
               sh 'exit 0'
             }
@@ -438,7 +438,7 @@ pipeline {
 //          stage('UPGRADE-old-engine-from-714') {
 //            steps {
 ////              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-////                runMaven(true, true, true,'qa/', 'verify -Pold-engine,' + getDbProfiles(env.DB))
+////                runMaven(true, true, true, 'qa/', 'verify -Pold-engine,' + getDbProfiles(env.DB))
 ////              }
 //              sh 'exit 0'
 //            }
@@ -469,7 +469,7 @@ pipeline {
 //          stage('UPGRADE-rolling-update') {
 //            steps {
 ////              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-////                runMaven(true, true, true,'qa/test-db-rolling-update/', 'verify -Prolling-update,' + getDbProfiles(env.DB))
+////                runMaven(true, true, true, 'qa/test-db-rolling-update/', 'verify -Prolling-update,' + getDbProfiles(env.DB))
 ////              }
 //              sh 'exit 0'
 //            }
@@ -541,7 +541,7 @@ pipeline {
 //          stage('PERFORMANCE-large-data') {
 //            steps {
 ////              withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-////                runMaven(true, true, true,'qa/large-data-tests/', 'verify -Plarge-data-tests,' + getDbProfiles(env.DB))
+////                runMaven(true, true, true, 'qa/large-data-tests/', 'verify -Plarge-data-tests,' + getDbProfiles(env.DB))
 ////              }
 //              sh 'exit 0'
 //            }
@@ -575,7 +575,7 @@ void runMaven(boolean runtimeStash, boolean distroStash, boolean qaStash, String
   if (distroStash) unstash "platform-stash-distro"
   if (qaStash) unstash "platform-stash-qa"
   configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-    sh("cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -Dmaven.repo.local=\${WORKSPACE}/.m2 -nsu -B")
+    sh("cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -nsu -Dmaven.repo.local=\${WORKSPACE}/.m2 -B")
   }
 }
 
