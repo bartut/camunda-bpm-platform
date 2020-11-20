@@ -54,6 +54,7 @@
     {"name": "Task Local Variable"},
     {"name": "Task Variable"},
     {"name": "Telemetry"},
+    {"name": "Tenant"},
     {"name": "User"},
     {"name": "Version"}
   ],
