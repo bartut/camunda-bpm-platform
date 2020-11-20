@@ -18,24 +18,24 @@
 import React, { useRef, useState } from "react";
 import classNames from "classnames";
 
-import { abbreviateNumber } from "utils/filters";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 import "./DiagramBadge.scss";
 
 export default function DiagramBadge({
   draggable = false,
-  count,
   tooltip,
   onDrag = () => {},
   onDragEnd = () => {},
   onDragStart = () => {},
-  className = ""
+  className = "",
+  children,
+  ...props
 }) {
   const [dragActive, setDragActive] = useState(false);
 
   const badgeRef = useRef();
-  if (!count) {
+  if (!children) {
     return null;
   }
 
@@ -67,8 +67,9 @@ export default function DiagramBadge({
         draggable={draggable}
         className={classNames("DiagramBadge badge", className)}
         ref={badgeRef}
+        {...props}
       >
-        {abbreviateNumber(count)}
+        {children}
       </span>
     </OverlayTrigger>
   );

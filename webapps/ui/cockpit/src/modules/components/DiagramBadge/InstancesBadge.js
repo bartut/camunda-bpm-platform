@@ -19,13 +19,16 @@ import React from "react";
 import translate from "utils/translation";
 import DiagramBadge from "./DiagramBadge";
 
+import { abbreviateNumber } from "utils/filters";
+
 export default function InstancesBadge({ count, ...props }) {
   return (
     <DiagramBadge
       tooltip={translate("PLUGIN_ACTIVITY_INSTANCE_RUNNING_ACTIVITY_INSTANCES")}
-      count={count}
       className="InstancesBadge"
       {...props}
-    />
+    >
+      {abbreviateNumber(count)}
+    </DiagramBadge>
   );
 }
