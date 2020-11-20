@@ -579,7 +579,7 @@ void runMaven(boolean runtimeStash, boolean distroStash, boolean qaStash, String
 //  if (distroStash) unstash "platform-stash-distro"
 //  if (qaStash) unstash "platform-stash-qa"
   configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-    sh("mvn -s \$MAVEN_SETTINGS_XML ${cmd} -nsu -Dmaven.repo.local=\${WORKSPACE}/.m2 -f ${directory}/pom.xml -B")
+    sh("mvn -s \$MAVEN_SETTINGS_XML ${cmd} -nsu -Dmaven.repo.local=\${WORKSPACE}/.m2 -DforkCount=1 -f ${directory}/pom.xml -B")
   }
 }
 
