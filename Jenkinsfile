@@ -63,7 +63,9 @@ pipeline {
              }
           }
     
-          archiveArtifacts artifacts: '.m2/org/camunda/**/*-SNAPSHOT/**,**/camunda-webapp*frontend-sources.zip', excludes: '**/*.zip,**/*.tar.gz', followSymlinks: false
+          archiveArtifacts artifacts: '.m2/org/camunda/**/*-SNAPSHOT/**/*.jar,.m2/org/camunda/**/*-SNAPSHOT/**/*.pom,.m2/org/camunda/**/*-SNAPSHOT/**/*.xml,.m2/org/camunda/**/*-SNAPSHOT/**/*.txt,.m2/org/camunda/**/*-SNAPSHOT/**/camunda-webapp*frontend-sources.zip', followSymlinks: false
+          //archiveArtifacts artifacts: '.m2/org/camunda/**/*-SNAPSHOT/**', excludes: '**/*.zip,**/*.tar.gz', followSymlinks: false
+          archiveArtifacts artifacts: '**/camunda-webapp*frontend-sources.zip', followSymlinks: false
     
           stash name: "platform-stash-runtime", includes: ".m2/org/camunda/**/*-SNAPSHOT/**", excludes: "**/qa/**,**/*qa*/**,**/*.zip,**/*.tar.gz"
           stash name: "platform-stash-qa", includes: ".m2/org/camunda/bpm/**/qa/**/*-SNAPSHOT/**,.m2/org/camunda/bpm/**/*qa*/**/*-SNAPSHOT/**", excludes: "**/*.zip,**/*.tar.gz"
