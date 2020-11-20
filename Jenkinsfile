@@ -55,15 +55,15 @@ pipeline {
       }
       steps {
         withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-          nodejs('nodejs-14.6.0'){
-             configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-               sh """
-                 mvn -s \$MAVEN_SETTINGS_XML clean install source:jar -Pdistro,distro-ce,distro-wildfly,distro-webjar -DskipTests -Dmaven.repo.local=\$(pwd)/.m2 com.mycila:license-maven-plugin:check -B
-               """
-             }
-          }
+          //nodejs('nodejs-14.6.0'){
+          //   configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+          //     sh """
+          //       mvn -s \$MAVEN_SETTINGS_XML clean install source:jar -Pdistro,distro-ce,distro-wildfly,distro-webjar -DskipTests -Dmaven.repo.local=\$(pwd)/.m2 com.mycila:license-maven-plugin:check -B
+          //     """
+          //   }
+          //}
     
-          //archiveArtifacts artifacts: 'database/**', followSymlinks: false
+          archiveArtifacts artifacts: 'database/**', followSymlinks: false
           //archiveArtifacts artifacts: '.m2/org/camunda/**/*-SNAPSHOT/**/*.jar,.m2/org/camunda/**/*-SNAPSHOT/**/*.pom,.m2/org/camunda/**/*-SNAPSHOT/**/*.xml,.m2/org/camunda/**/*-SNAPSHOT/**/*.txt,.m2/org/camunda/**/*-SNAPSHOT/**/camunda-webapp*frontend-sources.zip', followSymlinks: false
           //archiveArtifacts artifacts: '.m2/org/camunda/**/camunda-webapp*frontend-sources.zip,.m2/org/camunda/**/license-book*.zip,.m2/org/camunda/**/camunda-webapp*.war', followSymlinks: false
     
@@ -72,7 +72,10 @@ pipeline {
           //stash name: "platform-stash-distro", includes: ".m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.zip,.m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.tar.gz"
          }
     
-        build job: 'cambpm-jenkins-pipelines-ee/${BRANCH_NAME}', parameters: [string(name: 'copyArtifactSelector', value: '<TriggeredBuildSelector plugin="copyartifact@1.45.1">  <upstreamFilterStrategy>UseGlobalSetting</upstreamFilterStrategy>  <allowUpstreamDependencies>false</allowUpstreamDependencies></TriggeredBuildSelector>'), booleanParam(name: 'STANDALONE', value: false)], quietPeriod: 10, wait: false
+        build job: "cambpm-jenkins-pipelines-ee/${env.BRANCH_NAME}", parameters: [ 
+                                                                          string(name: 'copyArtifactSelector', value: '<TriggeredBuildSelector plugin="copyartifact@1.45.1">  <upstreamFilterStrategy>UseGlobalSetting</upstreamFilterStrategy>  <allowUpstreamDependencies>false</allowUpstreamDependencies></TriggeredBuildSelector>'),
+                                                                          booleanParam(name: 'STANDALONE', value: false)
+                                                                        ], quietPeriod: 10, wait: false
     
       }
     }
