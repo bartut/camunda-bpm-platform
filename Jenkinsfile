@@ -55,15 +55,7 @@ pipeline {
       }
       steps {
         withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-          sh '''
-            mvn --version
-            java -version
-          '''
           nodejs('nodejs-14.6.0'){
-            sh '''
-              node -v
-              npm version
-            '''
              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                sh """
                  mvn -s \$MAVEN_SETTINGS_XML clean install source:jar -Pdistro,distro-ce,distro-wildfly,distro-webjar -DskipTests -Dmaven.repo.local=\$(pwd)/.m2 com.mycila:license-maven-plugin:check -B
@@ -71,15 +63,18 @@ pipeline {
              }
           }
 
-          archiveArtifacts artifacts: '.m2/org/camunda/**/*-SNAPSHOT/**', excludes: '**/*.zip,**/*.tar.gz', followSymlinks: false
+          archiveArtifacts artifacts: '.m2/org/camunda/**/*-SNAPSHOT/**/*.jar,.m2/org/camunda/**/*-SNAPSHOT/**/*.pom,.m2/org/camunda/**/*-SNAPSHOT/**/*.xml,.m2/org/camunda/**/*-SNAPSHOT/**/*.txt,.m2/org/camunda/**/*-SNAPSHOT/**/camunda-webapp*frontend-sources.zip', followSymlinks: false
+          archiveArtifacts artifacts: '.m2/org/camunda/**/camunda-webapp*frontend-sources.zip,.m2/org/camunda/**/license-book*.zip,.m2/org/camunda/**/camunda-webapp*.war,.m2/org/camunda/**/camunda-engine-rest*.war,.m2/org/camunda/**/camunda-example-invoice*.war,.m2/org/camunda/**/camunda-h2-webapp*.war,.m2/org/camunda/**/*-SNAPSHOT/**/*.tar.gz,.m2/org/camunda/**/*-SNAPSHOT/**/camunda-jboss-modules*.zip', followSymlinks: false
 
           stash name: "platform-stash-runtime", includes: ".m2/org/camunda/**/*-SNAPSHOT/**", excludes: "**/qa/**,**/*qa*/**,**/*.zip,**/*.tar.gz"
-          // stash name: "platform-stash-qa", includes: ".m2/org/camunda/bpm/**/qa/**/*-SNAPSHOT/**,.m2/org/camunda/bpm/**/*qa*/**/*-SNAPSHOT/**", excludes: "**/*.zip,**/*.tar.gz"
+          stash name: "platform-stash-qa", includes: ".m2/org/camunda/bpm/**/qa/**/*-SNAPSHOT/**,.m2/org/camunda/bpm/**/*qa*/**/*-SNAPSHOT/**", excludes: "**/*.zip,**/*.tar.gz"
           stash name: "platform-stash-distro", includes: ".m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.zip,.m2/org/camunda/bpm/**/*-SNAPSHOT/**/*.tar.gz"
          }
 
-        build job: 'cambpm-jenkins-pipelines-ee/pipeline-master', parameters: [string(name: 'copyArtifactSelector', value: '<TriggeredBuildSelector plugin="copyartifact@1.45.1">  <upstreamFilterStrategy>UseGlobalSetting</upstreamFilterStrategy>  <allowUpstreamDependencies>false</allowUpstreamDependencies></TriggeredBuildSelector>'), booleanParam(name: 'STANDALONE', value: false)], quietPeriod: 10, wait: false
-
+        build job: "cambpm-jenkins-pipelines-ee/${env.BRANCH_NAME}", parameters: [
+            string(name: 'copyArtifactSelector', value: '<TriggeredBuildSelector plugin="copyartifact@1.45.1">  <upstreamFilterStrategy>UseGlobalSetting</upstreamFilterStrategy>  <allowUpstreamDependencies>false</allowUpstreamDependencies></TriggeredBuildSelector>'),
+            booleanParam(name: 'STANDALONE', value: false)
+        ], quietPeriod: 10, wait: false
       }
     }
     stage('h2 tests') {
@@ -103,7 +98,7 @@ pipeline {
           }
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine/', ' test -Pdatabase,h2')
+              runMaven(true, false, false, 'engine/', ' test -Pdatabase,h2')
             }
           }
         }
@@ -126,7 +121,7 @@ pipeline {
           }
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine/', 'test -Pdatabase,h2,cfgAuthorizationCheckRevokesAlways')
+              runMaven(true, false, false, 'engine/', 'test -Pdatabase,h2,cfgAuthorizationCheckRevokesAlways')
             }
           }
         }
@@ -149,7 +144,7 @@ pipeline {
           }
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine-rest/engine-rest/', 'clean install -Pjersey2')
+              runMaven(true, false, false, 'engine-rest/engine-rest/', 'clean install -Pjersey2')
             }
           }
         }
@@ -172,7 +167,7 @@ pipeline {
           }
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine-rest/engine-rest/', 'clean install -Presteasy3')
+              runMaven(true, false, false, 'engine-rest/engine-rest/', 'clean install -Presteasy3')
             }
           }
         }
@@ -195,7 +190,7 @@ pipeline {
           }
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'webapps/', 'clean test -Pdatabase,h2 -Dskip.frontend.build=true')
+              runMaven(true, false, false, 'webapps/', 'clean test -Pdatabase,h2 -Dskip.frontend.build=true')
             }
           }
         }
@@ -219,7 +214,7 @@ pipeline {
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
               catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                runMaven(true, true, 'qa/', 'clean install -Ptomcat,h2,engine-integration')
+                runMaven(true, true, false, 'qa/', 'clean install -Ptomcat,h2,engine-integration')
               }
             }
           }
@@ -249,7 +244,7 @@ pipeline {
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
               catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                runMaven(true, true,'qa/', 'clean install -Ptomcat,h2,webapps-integration')
+                runMaven(true, true, false, 'qa/', 'clean install -Ptomcat,h2,webapps-integration')
               }
             }
           }
@@ -279,7 +274,7 @@ pipeline {
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
               catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                runMaven(true, true,'qa/', 'clean install -Pwildfly-vanilla,webapps-integration-sa')
+                runMaven(true, true, false, 'qa/', 'clean install -Pwildfly-vanilla,webapps-integration-sa')
               }
             }
           }
@@ -304,7 +299,7 @@ pipeline {
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
               catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                runMaven(true, true,'distro/run/', 'clean install -Pintegration-test-camunda-run')
+                runMaven(true, true, true, 'distro/run/', 'clean install -Pintegration-test-camunda-run')
               }
             }
           }
@@ -334,7 +329,7 @@ pipeline {
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
               catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                runMaven(true, true,'spring-boot-starter/', 'clean install -Pintegration-test-spring-boot-starter')
+                runMaven(true, true, true, 'spring-boot-starter/', 'clean install -Pintegration-test-spring-boot-starter')
               }
             }
           }
@@ -356,7 +351,7 @@ pipeline {
           }
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine/', 'clean verify -Pcheck-api-compatibility')
+              runMaven(true, false, false, 'engine/', 'clean verify -Pcheck-api-compatibility')
             }
           }
         }
@@ -368,7 +363,7 @@ pipeline {
           }
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
-              runMaven(true, false,'engine/', 'clean test -Pcheck-plugins')
+              runMaven(true, false, false, 'engine/', 'clean test -Pcheck-plugins')
             }
           }
         }
@@ -381,7 +376,7 @@ pipeline {
           steps{
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
               nodejs('nodejs-14.6.0'){
-                runMaven(true, false,'webapps/', 'clean test -Pdb-table-prefix')
+                runMaven(true, false, false, 'webapps/', 'clean test -Pdb-table-prefix')
               }
             }
           }
@@ -409,10 +404,13 @@ pipeline {
   }
 }
 
-void runMaven(boolean runtimeStash, boolean distroStash, String directory, String cmd) {
+void runMaven(boolean runtimeStash, boolean distroStash, boolean qaStash, String directory, String cmd) {
   if (runtimeStash) unstash "platform-stash-runtime"
   if (distroStash) unstash "platform-stash-distro"
-  sh("export MAVEN_OPTS='-Dmaven.repo.local=\$(pwd)/.m2' && cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -B -Dmaven.repo.local=\$(pwd)/.m2")
+  if (qaStash) unstash "platform-stash-qa"
+  configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+    sh("cd ${directory} && mvn -s \$MAVEN_SETTINGS_XML ${cmd} -nsu -Dmaven.repo.local=\${WORKSPACE}/.m2 -B")
+  }
 }
 
 void withLabels(String... labels) {
