@@ -82,6 +82,11 @@ pipeline {
               runMaven(true, true, true,'distro/sql-script/', 'install -Pcheck-sql,h2')
             }
           }
+          post {
+            always {
+              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+            }
+          }
         }
         stage('UPGRADE-databases-from-714-h2') {
           agent {
@@ -103,6 +108,11 @@ pipeline {
           steps {
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
               runMaven(true, true, true, 'qa/test-db-upgrade/', 'verify -Pupgrade-db,h2')
+            }
+          }
+          post {
+            always {
+              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
             }
           }
         }
@@ -128,6 +138,11 @@ pipeline {
               runMaven(true, true, true, 'qa/test-db-instance-migration/', 'verify -Pinstance-migration,h2')
             }
           }
+          post {
+            always {
+              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+            }
+          }
         }
         stage('UPGRADE-old-engine-from-714-h2') {
           agent {
@@ -149,6 +164,11 @@ pipeline {
           steps {
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
               runMaven(true, true, true, 'qa/', 'verify -Pold-engine,h2')
+            }
+          }
+          post {
+            always {
+              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
             }
           }
         }
@@ -174,6 +194,11 @@ pipeline {
               runMaven(true, true, true, 'qa/test-db-rolling-update/', 'verify -Prolling-update,h2')
             }
           }
+          post {
+            always {
+              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+            }
+          }
         }
         stage('PERFORMANCE-large-data-h2') {
           agent {
@@ -195,6 +220,11 @@ pipeline {
           steps {
             withMaven(jdk: 'jdk-8-latest', maven: 'maven-3.2-latest', mavenSettingsConfig: 'maven-nexus-settings') {
               runMaven(true, true, true, 'qa/large-data-tests/', 'verify -Plarge-data-tests,h2')
+            }
+          }
+          post {
+            always {
+              junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
             }
           }
         }
@@ -232,6 +262,11 @@ pipeline {
 //              }
               sh 'exit 0'
             }
+            post {
+              always {
+                junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+              }
+            }
           }
         }
       }
@@ -267,6 +302,11 @@ pipeline {
 //                runMaven(true, true, true, 'qa/test-db-upgrade/', 'verify -Pupgrade-db,' + getDbProfiles(env.DB))
 //              }
               sh 'exit 0'
+            }
+            post {
+              always {
+                junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+              }
             }
           }
         }
@@ -304,6 +344,11 @@ pipeline {
 //              }
               sh 'exit 0'
             }
+            post {
+              always {
+                junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+              }
+            }
           }
         }
       }
@@ -339,6 +384,11 @@ pipeline {
 //                runMaven(true, true, true, 'qa/', 'verify -Pold-engine,' + getDbProfiles(env.DB))
 //              }
               sh 'exit 0'
+            }
+            post {
+              always {
+                junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+              }
             }
           }
         }
@@ -376,6 +426,11 @@ pipeline {
 //              }
               sh 'exit 0'
             }
+            post {
+              always {
+                junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+              }
+            }
           }
         }
       }
@@ -385,7 +440,7 @@ pipeline {
         axes {
           axis {
             name 'JDK'
-            values 'openjdk-jdk-8-latest'
+            values 'openjdk-jdk-8-latest', 'openjdk-jdk-14-latest'
           }
         }
         agent {
@@ -411,6 +466,11 @@ pipeline {
 //                runMaven(true, true, true, '.', 'install source:jar source:test-jar -Pdistro,distro-wildfly,distro-webjar')
 //              }
               sh 'exit 0'
+            }
+            post {
+              always {
+                junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+              }
             }
           }
         }
@@ -447,6 +507,11 @@ pipeline {
 //                runMaven(true, true, true,'qa/large-data-tests/', 'verify -Plarge-data-tests,' + getDbProfiles(env.DB))
 //              }
               sh 'exit 0'
+            }
+            post {
+              always {
+                junit testResults: '**/target/*-reports/TEST-*.xml', keepLongStdio: true
+              }
             }
           }
         }
@@ -488,7 +553,7 @@ void withLabels(String... labels) {
   }
 }
 
-String getDbAgent(String dbLabel, Integer cpuLimit = 4){
+String getDbAgent(String dbLabel, Integer cpuLimit = 4, Integer mavenForkCount = 1){
   Map dbInfo = getDbInfo(dbLabel)
   String mavenMemoryLimit = cpuLimit * 4;
   """
@@ -503,6 +568,11 @@ spec:
     image: "gcr.io/ci-30-162810/${dbInfo.type}:${dbInfo.version}"
     args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
     tty: true
+    env:
+    - name: LIMITS_CPU
+      value: ${mavenForkCount}
+    - name: TZ
+      value: Europe/Berlin
     resources:
       limits:
         memory: ${mavenMemoryLimit}Gi
